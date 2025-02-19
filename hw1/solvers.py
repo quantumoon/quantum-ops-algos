@@ -61,15 +61,11 @@ class BandedSolver:
         """
         Evolve the wavefunction over time using the banded matrix solver.
         """
-        print('COMPUTATION STARTING...')
         for _ in range(self.K + 1):
             self.history.append(self.psi)
-            # Solve the tridiagonal system using the banded matrix solver.
             self.psi = solve_banded(l_and_u=(1, 1), ab=self.banded_matrix, b=self.psi)
-            # Normalize the wavefunction.
             norm_c = np.sqrt(np.sum(np.abs(self.psi)**2) * self.dx)
             self.psi /= norm_c
-        print('FINISHED')
 
 
 class EvolutionSolver:
@@ -108,6 +104,10 @@ class EvolutionSolver:
         self.x_V = x_V
         self.h_shape = h_shape
         self.X = np.linspace(0, L, N + 1)
+        
+        n_ = np.arange(1, self.h_shape + 1).reshape(-1, 1)
+        self.phi_vals = np.sqrt(2 / self.L) * np.sin(np.pi * n_ * self.X / self.L)  # shape: (h_shape, len(X))
+        
         self.m = 1  # Particle mass
 
         # Define the initial state in spatial representation.
@@ -151,13 +151,11 @@ class EvolutionSolver:
             psi(x) = sum_{n=1}^{h_shape} c_n * phi_n(x)
         where phi_n(x) are the sine basis functions.
         """
-        n = np.arange(1, self.h_shape + 1).reshape(-1, 1)
-        phi_vals = np.sqrt(2 / self.L) * np.sin(np.pi * n * self.X / self.L)  # shape: (h_shape, len(X))
-        return np.sum(c[:, None] * phi_vals, axis=0)
+        return np.sum(c[:, None] * self.phi_vals, axis=0)
 
     def _compute_hamiltonian(self):
         """
-        Compute the Hamiltonian matrix for the chosed basis.
+        Compute the Hamiltonian matrix for the chosen basis.
         """
         n_vals = np.arange(1, self.h_shape + 1)
         H = np.diag(self.k(n_vals)**2 / (2 * self.m))
@@ -177,11 +175,9 @@ class EvolutionSolver:
         """
         Evolve the quantum state over time using the precomputed time evolution operator.
         """
-        print('\nCOMPUTATION STARTING...')
         for _ in range(self.K + 1):
             psi = np.array(self._psi_from_c_vectorized(self.c))
             norm_psi = np.sqrt(np.sum(np.abs(psi)**2) * self.dx)
             psi /= norm_psi
             self.history.append(psi)
             self.c = self.U @ self.c
-        print('FINISHED')
