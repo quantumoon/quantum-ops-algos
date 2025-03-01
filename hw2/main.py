@@ -53,8 +53,8 @@ for t in np.arange(0, tau, dt):
 # Note: It is easy to show that a π pulse is equivalent to swapping the blocks
 # along the main and side diagonals of the density matrix
 total_rho_echo = np.copy(total_rho)
-total_rho_echo[0,0], total_rho_echo[1,1] = total_rho_echo[1,1], total_rho_echo[0,0]
-total_rho_echo[0,1], total_rho_echo[1,0] = total_rho_echo[1,0], total_rho_echo[0,1]
+total_rho_echo[0,0], total_rho_echo[1,1] = np.copy(total_rho_echo[1,1]), np.copy(total_rho_echo[0,0])
+total_rho_echo[0,1], total_rho_echo[1,0] = np.copy(total_rho_echo[1,0]), np.copy(total_rho_echo[0,1])
 
 for t in np.arange(tau, 2 * tau + dt, dt):
     system_rho = np.sum(total_rho, axis=-1)  # partial trace
