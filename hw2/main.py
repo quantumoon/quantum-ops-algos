@@ -47,7 +47,7 @@ for t in np.arange(0, tau, dt):
     fidelity_echo.append(fidelity_no_echo[-1])
     purity_echo.append(purity_no_echo[-1])
 
-    total_rho = U[:, None, :] * total_rho * U[None, :, :]  # shape: (2, 2, 2^N)
+    total_rho = U[:, None, :] * total_rho * U.conjugate()[None, :, :]  # shape: (2, 2, 2^N)
 
 # Apply R_X(π) to the first qubit (system qubit)
 # Note: It is easy to show that a π pulse is equivalent to swapping the blocks
@@ -65,8 +65,8 @@ for t in np.arange(tau, 2 * tau + dt, dt):
     fidelity_echo.append(np.trace(system_rho_echo @ system_rho_init).real)
     purity_echo.append(np.trace(system_rho_echo @ system_rho_echo).real)
 
-    total_rho = U[:, None, :] * total_rho * U[None, :, :]  # shape: (2, 2, 2^N)
-    total_rho_echo = U[:, None, :] * total_rho_echo * U[None, :, :]
+    total_rho = U[:, None, :] * total_rho * U.conjugate()[None, :, :]  # shape: (2, 2, 2^N)
+    total_rho_echo = U[:, None, :] * total_rho_echo * U.conjugate()[None, :, :]
 
 # 4. Rendering
 fig, axs = plt.subplots(2, 1, figsize=(8, 6), dpi=200)
