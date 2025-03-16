@@ -18,20 +18,24 @@ def apply_2qubit_gate(state, U, i, j):
 
 def apply_mixer(state, t, w):
     N = w.shape[0]
+    counter = 0
     for n in range(N):
         U = np.array([[np.cos(w[n] * t), -1j * np.sin(w[n] * t)],
                       [-1j * np.sin(w[n] * t), np.cos(w[n] * t)]], dtype=np.complex64)
         state = apply_1qubit_gate(state, U, n)
-    return state
+        counter += 1
+    return state, counter
 
 
 def apply_ZZ(state, t, gamma):
     N = gamma.shape[0]
+    counter = 0
     for n in range(N):
         for k in range(n + 1, N):
             U = expm(-1j * t * gamma[n, k] * np.diag([1, -1, -1, 1]))
             state = apply_2qubit_gate(state, U, n, k)
-    return state
+            counter += 1
+    return state, counter
 
 
 def apply_comm(state, t, gamma, w):
@@ -44,10 +48,13 @@ def apply_comm(state, t, gamma, w):
                         [0, 0, 0, 1],
                         [1, 0, 0, 0],
                         [0, -1, 0, 0]], dtype=np.complex64)
+    counter = 0
     for n in range(N):
         for k in range(n + 1,  N):
-            U_ZY = expm(-1j * t**2 * gamma[k, n] * w[k] * ZY)
-            U_YZ = expm(-1j * t**2 * gamma[k, n] * w[n] * YZ)
+            U_ZY = expm(-1j * t**2 * gamma[n, k] * w[k] * ZY)
+            U_YZ = expm(-1j * t**2 * gamma[n, k] * w[n] * YZ)
             state = apply_2qubit_gate(state, U_ZY, n, k)
+            counter += 1
             state = apply_2qubit_gate(state, U_YZ, n, k)
-    return state
+            counter += 1
+    return state, counter
