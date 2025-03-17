@@ -68,17 +68,16 @@ def approx_simulation(num_qubits, num_layers, num_shots, sigma, mode, seed=42):
     if not sampling:
         Kraus = [np.eye(2, dtype=np.complex64),
                  np.eye(2, dtype=np.complex64)[::-1]]
-        p = [0.5*(1+np.exp(-sigma**2/2)),
-             0.5*(1-np.exp(-sigma**2/2))]
+        p = 0.5*(1+np.exp(-sigma**2/2))
     
     H = 2**-0.5 * np.array([[1, 1],
                             [1,-1]], dtype=np.complex64)
     CZ = np.diag([1, 1, 1, -1]).astype(np.complex64)
     R_x = lambda t: np.array([[np.cos(t/2), -1j*np.sin(t/2)],
                               [-1j*np.sin(t/2), np.cos(t/2)]])
-    
 
     probs = np.zeros(1<<num_qubits)
+    ids = np.arange(1<<num_qubits)
     for shot in range(num_shots):
         state = np.zeros(1<<num_qubits, dtype=np.complex64)
         state[0] = 1
@@ -90,12 +89,13 @@ def approx_simulation(num_qubits, num_layers, num_shots, sigma, mode, seed=42):
                     theta = sigma * np.random.randn(1)[0]
                     state = apply_1qubit_gate(state, R_x(theta), n)
                 else:
-                    U = Kraus[np.random.choice([0, 1], p=p)]
+                    U = Kraus[np.random.choice([0, 1], p=[p, 1 - p])]
                     state = apply_1qubit_gate(state, U, n)
             
             for n in range(num_qubits):
                 state = apply_2qubit_gate(state, CZ, n, (n + 1) % num_qubits)
+        
         state /= np.sqrt(np.sum(np.abs(state)**2))
-        i = np.random.choice(np.arange(1<<num_qubits), p=np.abs(state.reshape(1<<num_qubits))**2)
+        i = np.random.choice(ids, p=np.abs(state.reshape(1<<num_qubits))**2)
         probs[i] += 1
     return probs / num_shots
