@@ -22,7 +22,6 @@ for i, num_shots in enumerate(tqdma(X)):
                             sigma=sigma,
                             mode='Sampling noise parameter')
     P[0, i] = entropy(p_true, p_1)
-    # P[0, i] = np.linalg.norm(p_true - p_1)
     
     p_2 = approx_simulation(num_qubits=num_qubits,
                             num_layers=p,
@@ -30,13 +29,11 @@ for i, num_shots in enumerate(tqdma(X)):
                             sigma=sigma,
                             mode='Choosing from 2 Kraus ops')
     P[1, i] = entropy(p_true, p_2)
-    # P[1, i] = np.linalg.norm(p_true - p_2)
 
 plt.figure(dpi=150)
 labels = ['Sampling noise parameter $\\delta$ from N(0, $\\sigma^{2}$)', 'Choosing from 2 Kraus ops']
 for i in range(2):
     plt.plot(X, P[i], label=labels[i], marker='.', alpha=0.7, markersize=3)
-# plt.plot(np.arange(1, 500), (np.arange(1, 500)**-0.5), linestyle='--', color='r', label='$\\frac{1}{\\sqrt{N}}$')
 plt.legend()
 plt.xlabel('Number of shots')
 plt.xscale('log')
