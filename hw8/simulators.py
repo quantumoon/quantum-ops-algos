@@ -1,6 +1,8 @@
 import numpy as np
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Optional
 from quantum_utils import rzz, rx
+from time import perf_counter
+
 
 class DummyQAOASimulator:
     def __init__(self,
@@ -60,6 +62,7 @@ class ContractionGraph:
     def __init__(self, num_qubits: int) -> None:
         self.nodes = {}  # node_id -> TensorNode
         self.edges = {}  # edge_id -> ContractionEdge
+        self.num_qubits = num_qubits
         # list of pairs (str, int)
         # (last node_id for given qubit, its free leg to contract)
         self._prev_per_qubit = [None] * num_qubits
@@ -174,8 +177,52 @@ class ContractionGraph:
                 e.v, e.leg_v = new_id, target_leg
             new_node.edges[target_leg] = eid
 
-            
-    def contract_all(self) -> float:
+    def find_and_contract(self, start_id: str, k: int, timing: bool = False) -> str:
+        best_cost = float('inf')
+        best_path: List[Tuple[str, str]] = []
+    
+        def dfs(current: str,
+                depth: int,
+                cost: float,
+                path: List[Tuple[str, str]],
+                prev: Optional[str]) -> None:
+            nonlocal best_cost, best_path
+            if path and cost < best_cost:
+                best_cost = cost
+                best_path = path.copy()
+            if depth == k:
+                return
+            edges_curr = set(self.nodes[current].edges.values())
+            neighbors = {(self.edges[eid].v if self.edges[eid].u == current else self.edges[eid].u) 
+                         for eid in edges_curr}
+            if not neighbors or (prev is not None and neighbors == {prev}):
+                return
+            for nb in neighbors:
+                common = len(edges_curr & set(self.nodes[nb].edges.values()))
+                legs_sum = self.nodes[current].num_legs + self.nodes[nb].num_legs
+                step_cost = 2 ** (legs_sum - common)
+                dfs(nb,
+                    depth + 1,
+                    cost + step_cost,
+                    path + [(current, nb)],
+                    current)
+    
+        dfs(start_id, 0, 0.0, [], None)
+        if not best_path:
+            if timing:
+                return start_id, 0
+            else:
+                return start_id
+        a, b = best_path[0]
+        if timing:
+            start = perf_counter()
+            self.contract(a, b)
+            contract_time = perf_counter() - start
+            return f"n{self._next_node_id - 1}", contract_time
+        self.contract(a, b)
+        return f"n{self._next_node_id - 1}"
+
+    def contract_dummy(self) -> float:
         while self.edges:
             _, edge = next(iter(self.edges.items()))
             self.contract(edge.u, edge.v)
@@ -183,3 +230,28 @@ class ContractionGraph:
         for node in self.nodes.values():
             p *= np.abs(node.tensor)**2
         return p
+    
+    def contract_greedy(self, k: int, timing: bool = False) -> float:
+        p = 1.
+        if timing:
+            total_time = 0.
+            for q in range(self.num_qubits):
+                start_id = f'$+_{q}$'
+                if start_id in self.nodes:
+                    node_id, contraction_time = self.find_and_contract(start_id=start_id, k=k, timing=True)
+                    while start_id != node_id:
+                        total_time += contraction_time
+                        start_id = node_id
+                        node_id, contraction_time = self.find_and_contract(start_id=start_id, k=k, timing=True)
+                    p *= np.abs(self.nodes[node_id].tensor)**2
+            return p, total_time
+        else:
+            for q in range(self.num_qubits):
+                start_id = f'$+_{q}$'
+                if start_id in self.nodes:
+                    node_id = self.find_and_contract(start_id=start_id, k=k)
+                    while start_id != node_id:
+                        start_id = node_id
+                        node_id = self.find_and_contract(start_id=start_id, k=k)
+                    p *= np.abs(self.nodes[node_id].tensor)**2
+            return p
