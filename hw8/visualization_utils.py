@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from simulators import ContractionGraph
 from typing import Tuple
 
+
 def visualize_contraction_graph(cg: ContractionGraph,
                                 figsize: Tuple[int, int] = (16, 9),
                                 dpi: int = 300) -> None:

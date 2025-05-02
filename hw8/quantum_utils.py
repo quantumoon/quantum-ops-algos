@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def random_zz_max_energy(N: int, proba: float, seed: int = 42):
+def random_zz_min_energy(N: int, proba: float, seed: int = 42):
     np.random.seed(seed)
     
     pairs = [(i, j) for i in range(N) for j in range(i) if np.random.rand() < proba]
@@ -11,8 +11,8 @@ def random_zz_max_energy(N: int, proba: float, seed: int = 42):
         z = np.array([1 - 2 * ((idx >> k) & 1) for k in range(N)], dtype=int)
         energies[idx] = sum(z[i] * z[j] for (i, j) in pairs)
 
-    max_energy = energies.max()
-    state_ids = np.where(energies == max_energy)[0]
+    min_energy = energies.min()
+    state_ids = np.where(energies == min_energy)[0]
 
     bitstrings = np.array([list(map(int, np.binary_repr(s, width=N))) for s in state_ids], dtype=int)
 
